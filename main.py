@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import confusion_matrix, classification_report
@@ -9,125 +8,106 @@ import tensorflow as tf
 from transformers import AutoTokenizer, TFAutoModelForSequenceClassification
 
 
-gpus = tf.config.list_physical_devices('GPU')
-if gpus:
-    try:
-        tf.config.experimental.set_memory_growth(gpus[0], True)
-        print("GPU ativada!")
-    except RuntimeError as e:
-        print(e)
-else:
-    print("Nenhuma GPU detectada")
+class ClassificadorPerguntasBERT:
 
-classificacao = pd.read_csv("classificacao.csv")
-
-labelencoder = LabelEncoder()
-y = labelencoder.fit_transform(classificacao['classificacao'])
-num_classes = len(np.unique(y))
-
-mensagens = classificacao["pergunta"].astype(str).values
-
-X_train, X_test, y_train, y_test = train_test_split(
-    mensagens,
-    y,
-    test_size=0.3,
-    random_state=42,
-    stratify=y
-)
+    def __init__(self, model_name="neuralmind/bert-base-portuguese-cased", max_len=64):
+        self.model_name = model_name
+        self.max_len = max_len
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.labelencoder = LabelEncoder()
+        self.model = None
+        self.num_classes = None
 
 
-model_name = "neuralmind/bert-base-portuguese-cased"
+    def carregar_dados(self, caminho_csv):
+        df = pd.read_csv(caminho_csv)
 
-tokenizer = AutoTokenizer.from_pretrained(model_name)
+        y = self.labelencoder.fit_transform(df["classificacao"])
+        self.num_classes = len(np.unique(y))
+        X = df["pergunta"].astype(str).values
 
-max_len = 64
-
-
-def encode_texts(texts, tokenizer, max_len=64):
-    return tokenizer(
-        list(texts),
-        padding='max_length',
-        truncation=True,
-        max_length=max_len,
-        return_tensors='tf'
-    )
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+            X, y, test_size=0.3, random_state=42, stratify=y
+        )
 
 
-X_train_enc = encode_texts(X_train, tokenizer, max_len)
-X_test_enc  = encode_texts(X_test,  tokenizer, max_len)
+    def encode(self, texts):
+        return self.tokenizer(
+            list(texts),
+            padding="max_length",
+            truncation=True,
+            max_length=self.max_len,
+            return_tensors="tf"
+        )
 
 
+    def inicializar_modelo(self):
+        self.model = TFAutoModelForSequenceClassification.from_pretrained(
+            self.model_name,
+            num_labels=self.num_classes
+        )
 
-model = TFAutoModelForSequenceClassification.from_pretrained(
-    model_name,
-    num_labels=num_classes,
-)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=1e-5)
+        loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=2e-5)
-loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-
-model.compile(
-    optimizer=optimizer,
-    loss=loss,
-    metrics=['accuracy']
-)
-
-model.summary()
-
-history = model.fit(
-    dict(X_train_enc),
-    y_train,
-    epochs=3,
-    batch_size=8,
-    validation_data=(dict(X_test_enc), y_test),
-    verbose=True,
-)
+        self.model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
 
 
+    def treinar(self, epochs=3, batch_size=8):
+        X_train_enc = self.encode(self.X_train)
+        X_test_enc = self.encode(self.X_test)
 
-loss_val, accuracy_val = model.evaluate(dict(X_test_enc), y_test, verbose=0)
-print("Loss:", loss_val)
-print("Acurácia:", accuracy_val)
-
-# Predições para matriz de confusão e classification_report
-outputs = model(dict(X_test_enc), training=False)
-logits = outputs.logits  # tensor [n_amostras, num_classes]
-
-probs = tf.nn.softmax(logits, axis=-1).numpy()
-y_pred_int = probs.argmax(axis=1)
-
-cm = confusion_matrix(y_test, y_pred_int)
-print("Matriz de confusão:\n", cm)
-
-print("\nRelatório de classificação:")
-print(classification_report(y_test, y_pred_int, target_names=labelencoder.classes_))
+        self.history = self.model.fit(
+            dict(X_train_enc),
+            self.y_train,
+            epochs=epochs,
+            batch_size=batch_size,
+            validation_data=(dict(X_test_enc), self.y_test),
+            verbose=True
+        )
 
 
-# =========================
-# 6. Função para classificar nova pergunta
-# =========================
-def classificar_pergunta(texto):
-    enc = tokenizer(
-        [texto],
-        padding='max_length',
-        truncation=True,
-        max_length=max_len,
-        return_tensors='tf'
-    )
+    def avaliar(self):
+        X_test_enc = self.encode(self.X_test)
 
-    outputs = model(enc, training=False)
-    logits = outputs.logits
-    probs = tf.nn.softmax(logits, axis=-1).numpy()[0]
+        loss, accuracy = self.model.evaluate(dict(X_test_enc), self.y_test, verbose=0)
 
-    idx = int(np.argmax(probs))
-    classe = labelencoder.inverse_transform([idx])[0]
+        print(f"Loss: {loss}")
+        print(f"Acurácia: {accuracy}")
 
-    return classe, float(probs[idx])
+        outputs = self.model(dict(X_test_enc), training=False)
+        logits = outputs.logits
+        probs = tf.nn.softmax(logits, axis=-1).numpy()
+        y_pred = probs.argmax(axis=1)
+
+        print("\nMatriz de Confusão:")
+        print(confusion_matrix(self.y_test, y_pred))
+
+        print("\nRelatório de Classificação:")
+        print(classification_report(self.y_test, y_pred, target_names=self.labelencoder.classes_))
 
 
+    def classificar(self, texto):
+        enc = self.encode([texto])
+        outputs = self.model(enc, training=False)
+        probs = tf.nn.softmax(outputs.logits, axis=-1).numpy()[0]
+
+        idx = int(np.argmax(probs))
+        classe = self.labelencoder.inverse_transform([idx])[0]
+
+        return classe, float(probs[idx])
 
 if __name__ == "__main__":
-    texto_exemplo = "De que forma uma unidade pode contestar formalmente uma IN que impacta negativamente seus processos internos?"
-    classe, confianca = classificar_pergunta(texto_exemplo)
-    print(f"Texto: {texto_exemplo}")
-    print(f"Classe prevista: {classe} (confiança: {confianca:.4f})")
+    clf = ClassificadorPerguntasBERT()
+
+    clf.carregar_dados("classificacao.csv")
+    clf.inicializar_modelo()
+    clf.treinar(epochs=3, batch_size=8)
+    clf.avaliar()
+
+    texto = "De que forma uma unidade pode contestar formalmente uma IN?"
+    classe, confianca = clf.classificar(texto)
+
+    print("\nPergunta:", texto)
+    print("Classe:", classe)
+    print("Confiança:", confianca)
