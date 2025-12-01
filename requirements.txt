@@ -1,0 +1,12 @@
+pandas==2.2.3
+numpy==1.26.4
+scikit-learn==1.5.2
+tensorflow==2.20.0
+tensorflow-io-gcs-filesystem==0.31.0
+tf-keras==2.20.0
+transformers==4.46.2
+huggingface-hub==0.25.2
+tokenizers==0.20.1
+protobuf==5.28.3
+keras==3.10.0
+
