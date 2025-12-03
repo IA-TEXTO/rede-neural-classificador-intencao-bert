@@ -1,5 +1,8 @@
 import pandas as pd
 import numpy as np
+import pickle
+import os
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import confusion_matrix, classification_report
@@ -47,7 +50,7 @@ class ClassificadorPerguntasBERT:
             num_labels=self.num_classes
         )
 
-        optimizer = tf.keras.optimizers.Adam(learning_rate=1e-5)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=2e-5)
         loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
         self.model.compile(optimizer=optimizer, loss=loss, metrics=["accuracy"])
@@ -97,6 +100,53 @@ class ClassificadorPerguntasBERT:
 
         return classe, float(probs[idx])
 
+    def salvar_modelo(self, pasta):
+        os.makedirs(pasta, exist_ok=True)
+
+        self.model.save_pretrained(pasta)
+
+        self.tokenizer.save_pretrained(pasta)
+
+        with open(os.path.join(pasta, "labelencoder.pkl"), "wb") as f:
+            pickle.dump(self.labelencoder, f)
+
+        # Salvar metadados
+        meta = {
+            "model_name": self.model_name,
+            "max_len": self.max_len,
+            "num_classes": self.num_classes,
+        }
+        with open(os.path.join(pasta, "metadata.pkl"), "wb") as f:
+            pickle.dump(meta, f)
+
+        print(f"Modelo salvo em: {pasta}")
+
+
+    def carregar_modelo(self, pasta):
+        # Carregar tokenizer
+        self.tokenizer = AutoTokenizer.from_pretrained(pasta)
+
+        # Carregar labelencoder
+        with open(os.path.join(pasta, "labelencoder.pkl"), "rb") as f:
+            self.labelencoder = pickle.load(f)
+
+        # Carregar metadados
+        with open(os.path.join(pasta, "metadata.pkl"), "rb") as f:
+            meta = pickle.load(f)
+
+        self.model_name = meta["model_name"]
+        self.max_len = meta["max_len"]
+        self.num_classes = meta["num_classes"]
+
+        # Carregar modelo
+        self.model = TFAutoModelForSequenceClassification.from_pretrained(
+            pasta,
+            num_labels=self.num_classes
+        )
+
+        print(f"Modelo carregado de: {pasta}")
+
+
 if __name__ == "__main__":
     clf = ClassificadorPerguntasBERT()
 
@@ -105,9 +155,15 @@ if __name__ == "__main__":
     clf.treinar(epochs=3, batch_size=8)
     clf.avaliar()
 
+    clf.salvar_modelo("modelo_treinado")
+
     texto = "De que forma uma unidade pode contestar formalmente uma IN?"
     classe, confianca = clf.classificar(texto)
 
     print("\nPergunta:", texto)
     print("Classe:", classe)
     print("Confiança:", confianca)
+
+
+
+    
