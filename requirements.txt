@@ -1,11 +1,6 @@
 pandas
 numpy
 scikit-learn
-tensorflow==2.20.0
-tf-keras==2.20.0
+tensorflow
 transformers
-huggingface-hub
-tokenizers
-protobuf
-keras
-
+torch
