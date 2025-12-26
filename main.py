@@ -19,7 +19,6 @@ from transformers import (
     AutoModelForSequenceClassification,
 )
 
-
 class TextDataset(Dataset):
     def __init__(self, encodings, labels):
         self.encodings = encodings
@@ -203,11 +202,4 @@ if __name__ == "__main__":
     clf.treinar(epochs=4, batch_size=8)
     clf.avaliar()
 
-    clf.salvar_modelo("modelo")
-
-    texto = input("Insira a pergunta desejada: ")
-    classe, confianca = clf.classificar(texto)
-
-    print("\nPergunta:", texto)
-    print("Classe:", classe)
-    print("Confiança:", confianca)
+    clf.salvar_modelo("modelo_treinado")
