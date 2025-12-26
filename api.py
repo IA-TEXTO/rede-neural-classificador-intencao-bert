@@ -1,24 +1,43 @@
-from flask import Flask, request, jsonify
+from fastapi import FastAPI
+from pydantic import BaseModel, Field
 from main import ClassificadorPerguntasBERT
 
-app = Flask(__name__)
+app = FastAPI(
+    title="API de Classificação de Intenções - BERT",
+    description="API para classificar intenções de perguntas usando modelo BERT treinado",
+    version="1.0.0"
+)
 
 clf = ClassificadorPerguntasBERT()
-clf.carregar_modelo("modelo")
+clf.carregar_modelo("modelo_treinado")
 
-@app.route("/classificar", methods=["POST"])
-def classificar():
-    data = request.get_json()
+class TextoEntrada(BaseModel):
+    texto: str = Field(
+        ..., 
+        description="Texto da pergunta a ser classificada",
+        example="Como faço para cancelar minha assinatura?"
+    )
 
-    if "texto" not in data:
-        return jsonify({"erro": "campo 'texto' ausente"}), 400
+class ClassificacaoResposta(BaseModel):
+    classe: str = Field(..., description="Classe/intenção identificada")
+    confianca: float = Field(..., description="Nível de confiança da classificação (0-1)")
 
-    classe, confianca = clf.classificar(data["texto"])
+@app.get("/")
+async def root():
+    return {
+        "mensagem": "API de Classificação de Intenções com BERT",
+        "versao": "1.0.0",
+        "documentacao": "/docs",
+        "endpoints": {
+            "classificar": "/classificar (POST)"
+        }
+    }
 
-    return jsonify({
-        "classe": classe,
-        "confianca": confianca
-    })
-
-if __name__ == "__main__":
-    app.run(debug=True)
+@app.post("/classificar", response_model=ClassificacaoResposta)
+async def classificar(dados: TextoEntrada):
+    classe, confianca = clf.classificar(dados.texto)
+    
+    return ClassificacaoResposta(
+        classe=classe,
+        confianca=float(confianca)
+    )

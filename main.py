@@ -36,7 +36,7 @@ class TextDataset(Dataset):
 
 class ClassificadorPerguntasBERT:
 
-    def __init__(self, model_name="neuralmind/bert-base-portuguese-cased", max_len=64, device=None):
+    def __init__(self, model_name="neuralmind/bert-base-portuguese-cased", max_len=100, device=None):
         self.model_name = model_name
         self.max_len = max_len
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -200,7 +200,7 @@ if __name__ == "__main__":
 
     clf.carregar_dados("classificacao.csv")
     clf.inicializar_modelo()
-    clf.treinar(epochs=3, batch_size=8)
+    clf.treinar(epochs=4, batch_size=8)
     clf.avaliar()
 
     clf.salvar_modelo("modelo")

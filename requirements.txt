@@ -1,7 +1,9 @@
-pandas
-numpy
-scikit-learn
-tensorflow
-transformers
-torch
-flask
+fastapi==0.110.0
+uvicorn[standard]==0.29.0
+torch==2.2.2
+transformers==4.39.3
+numpy==1.26.4
+pandas==2.2.1
+scikit-learn==1.4.1.post1
+
+
