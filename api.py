@@ -11,16 +11,21 @@ app = FastAPI(
 clf = ClassificadorPerguntasBERT()
 clf.carregar_modelo("modelo_treinado")
 
+
 class TextoEntrada(BaseModel):
     texto: str = Field(
-        ..., 
+        ...,
         description="Texto da pergunta a ser classificada",
-        example="Como faço para cancelar minha assinatura?"
+        json_schema_extra={
+            "example": "Como a legislação aplicável estabelece os critérios e os limites que devem ser observados nos procedimentos internos de tramitação de processos administrativos?"
+        },
     )
+
 
 class ClassificacaoResposta(BaseModel):
     classe: str = Field(..., description="Classe/intenção identificada")
     confianca: float = Field(..., description="Nível de confiança da classificação (0-1)")
+
 
 @app.get("/")
 async def root():
@@ -33,10 +38,10 @@ async def root():
         }
     }
 
+
 @app.post("/classificar", response_model=ClassificacaoResposta)
 async def classificar(dados: TextoEntrada):
     classe, confianca = clf.classificar(dados.texto)
-    
     return ClassificacaoResposta(
         classe=classe,
         confianca=float(confianca)

@@ -77,7 +77,7 @@ class ClassificadorPerguntasBERT:
         self.loss_fn = nn.CrossEntropyLoss()
 
 
-    def treinar(self, epochs=3, batch_size=8):
+    def treinar(self, epochs=4, batch_size=8):
 
         train_enc = self.encode(self.X_train)
         test_enc = self.encode(self.X_test)
