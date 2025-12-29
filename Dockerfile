@@ -1,20 +1,20 @@
-FROM python:3.11
+FROM python:3.11-slim
 
-RUN useradd --create-home myuser
+ENV DEBIAN_FRONTEND=noninteractive
 
-RUN python3 -m venv /home/myuser/venv
-ENV VIRTUAL_ENV=/home/myuser/venv
-ENV PATH="/home/myuser/venv/bin:$PATH"
+RUN useradd -m myuser
 
-WORKDIR /home/myuser/code
+WORKDIR /home/myuser/app
+
 COPY requirements.txt .
-RUN pip install --upgrade pip
-RUN pip3 install --no-cache-dir wheel
-RUN pip3 install --no-cache-dir -r requirements.txt
 
-USER myuser
+RUN pip install --upgrade pip \
+ && pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-EXPOSE 5000
-CMD ["python", "main.py"]
+USER myuser
+
+EXPOSE 8000
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "8000"]
+
