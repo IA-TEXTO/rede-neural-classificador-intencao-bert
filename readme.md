@@ -2,7 +2,7 @@
 
 Sistema de classificação de intenções de perguntas utilizando modelo BERT (Bidirectional Encoder Representations from Transformers) treinado em português. O projeto inclui treinamento do modelo, API REST para inferência e containerização com Docker.
 
-## 📋 Índice
+## Índice
 
 - [Sobre o Projeto](#sobre-o-projeto)
 - [Características](#características)
@@ -133,7 +133,7 @@ rede-neural-classificador-intencao-bert/
 
 ```
 
-## 🌐 Endpoints da API
+## Endpoints da API
 
 ### `GET /`
 Retorna informações sobre a API e endpoints disponíveis.
@@ -168,16 +168,6 @@ Classifica a intenção de uma pergunta.
 }
 ```
 
-## Exemplos
-
-### Exemplo com cURL
-
-```bash
-curl -X POST "http://localhost:8000/classificar" \
-  -H "Content-Type: application/json" \
-  -d '{"texto": "Como a legislação aplicável estabelece os critérios?"}'
-```
-
 ### Exemplo com Python
 
 ```python
@@ -193,25 +183,6 @@ resultado = response.json()
 
 print(f"Classe: {resultado['classe']}")
 print(f"Confiança: {resultado['confianca']:.2%}")
-```
-
-### Exemplo com JavaScript (Fetch API)
-
-```javascript
-fetch('http://localhost:8000/classificar', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({
-    texto: 'Como posso abrir um processo corretamente no Simlam?'
-  })
-})
-.then(response => response.json())
-.then(data => {
-  console.log('Classe:', data.classe);
-  console.log('Confiança:', data.confianca);
-});
 ```
 
 ## Parâmetros de Configuração
