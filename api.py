@@ -38,7 +38,6 @@ async def root():
         }
     }
 
-
 @app.post("/classificar", response_model=ClassificacaoResposta)
 async def classificar(dados: TextoEntrada):
     classe, confianca = clf.classificar(dados.texto)
