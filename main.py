@@ -129,7 +129,6 @@ class ClassificadorPerguntasBERT:
                 preds.extend(torch.argmax(logits, dim=1).cpu().numpy())
                 labels.extend(batch["labels"].cpu().numpy())
 
-        # Métricas
         print("\nMatriz de confusão:")
         print(confusion_matrix(labels, preds))
 
@@ -199,7 +198,7 @@ if __name__ == "__main__":
 
     clf.carregar_dados("classificacao.csv")
     clf.inicializar_modelo()
-    clf.treinar(epochs=4, batch_size=8)
+    clf.treinar(epochs=4, batch_size=10)
     clf.avaliar()
 
     clf.salvar_modelo("modelo_treinado")
