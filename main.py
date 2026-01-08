@@ -19,7 +19,6 @@ from transformers import (
     AutoModelForSequenceClassification,
 )
 
-
 class TextDataset(Dataset):
     def __init__(self, encodings, labels):
         self.encodings = encodings
@@ -36,7 +35,7 @@ class TextDataset(Dataset):
 
 class ClassificadorPerguntasBERT:
 
-    def __init__(self, model_name="neuralmind/bert-base-portuguese-cased", max_len=64, device=None):
+    def __init__(self, model_name="neuralmind/bert-base-portuguese-cased", max_len=100, device=None):
         self.model_name = model_name
         self.max_len = max_len
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -78,7 +77,7 @@ class ClassificadorPerguntasBERT:
         self.loss_fn = nn.CrossEntropyLoss()
 
 
-    def treinar(self, epochs=3, batch_size=8):
+    def treinar(self, epochs=4, batch_size=8):
 
         train_enc = self.encode(self.X_train)
         test_enc = self.encode(self.X_test)
@@ -130,7 +129,6 @@ class ClassificadorPerguntasBERT:
                 preds.extend(torch.argmax(logits, dim=1).cpu().numpy())
                 labels.extend(batch["labels"].cpu().numpy())
 
-        # Métricas
         print("\nMatriz de confusão:")
         print(confusion_matrix(labels, preds))
 
@@ -200,14 +198,7 @@ if __name__ == "__main__":
 
     clf.carregar_dados("classificacao.csv")
     clf.inicializar_modelo()
-    clf.treinar(epochs=3, batch_size=8)
+    clf.treinar(epochs=4, batch_size=10)
     clf.avaliar()
 
-    clf.salvar_modelo("modelo")
-
-    texto = input("Insira a pergunta desejada: ")
-    classe, confianca = clf.classificar(texto)
-
-    print("\nPergunta:", texto)
-    print("Classe:", classe)
-    print("Confiança:", confianca)
+    clf.salvar_modelo("modelo_treinado")
